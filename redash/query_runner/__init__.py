@@ -1,22 +1,19 @@
 import logging
-
 from contextlib import ExitStack
-from dateutil import parser
 from functools import wraps
-import socket
-import ipaddress
-from urllib.parse import urlparse
-
-from six import text_type
-from sshtunnel import open_tunnel
-from redash import settings, utils
-from redash.utils import json_loads
-from rq.timeouts import JobTimeoutException
-
-from redash.utils.requests_session import requests_or_advocate, requests_session, UnacceptableAddressException
-
 
 import sqlparse
+from dateutil import parser
+from rq.timeouts import JobTimeoutException
+from sshtunnel import open_tunnel
+
+from redash import settings, utils
+from redash.utils import json_loads
+from redash.utils.requests_session import (
+    UnacceptableAddressException,
+    requests_or_advocate,
+    requests_session,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -80,9 +77,9 @@ def split_sql_statements(query):
 
         # copy statement object. `copy.deepcopy` fails to do this, so just re-parse it
         st = sqlparse.engine.FilterStack()
-        stmt = next(st.run(sqlparse.text_type(stmt)))
+        stmt = next(st.run(str(stmt)))
 
-        sql = sqlparse.text_type(strip_comments.process(stmt))
+        sql = str(strip_comments.process(stmt))
         return sql.strip() == ""
 
     stack = sqlparse.engine.FilterStack()
@@ -90,7 +87,7 @@ def split_sql_statements(query):
     result = [stmt for stmt in stack.run(query)]
     result = [strip_trailing_comments(stmt) for stmt in result]
     result = [strip_trailing_semicolon(stmt) for stmt in result]
-    result = [sqlparse.text_type(stmt).strip() for stmt in result if not is_empty_statement(stmt)]
+    result = [str(stmt).strip() for stmt in result if not is_empty_statement(stmt)]
 
     if len(result) > 0:
         return result
@@ -101,11 +98,13 @@ def split_sql_statements(query):
 def combine_sql_statements(queries):
     return ";\n".join(queries)
 
+
 def find_last_keyword_idx(parsed_query):
     for i in reversed(range(len(parsed_query.tokens))):
         if parsed_query.tokens[i].ttype in sqlparse.tokens.Keyword:
             return i
     return -1
+
 
 class InterruptException(Exception):
     pass
@@ -120,7 +119,7 @@ class BaseQueryRunner(object):
     should_annotate_query = True
     noop_query = None
     limit_query = " LIMIT 1000"
-    limit_keywords = [ "LIMIT", "OFFSET"]
+    limit_keywords = ["LIMIT", "OFFSET"]
 
     def __init__(self, configuration):
         self.syntax = "sql"
@@ -367,7 +366,6 @@ class BaseHTTPQueryRunner(BaseQueryRunner):
             return None
 
     def get_response(self, url, auth=None, http_method="get", **kwargs):
-
         # Get authentication values if not given
         if auth is None:
             auth = self.get_auth()
