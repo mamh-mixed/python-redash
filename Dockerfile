@@ -1,5 +1,8 @@
 FROM node:16.20-buster-slim as frontend-builder
 
+RUN apt-get update && \
+  apt-get install -y --no-install-recommends git-core
+
 RUN npm install --global --force yarn@1.22.19
 
 # Controls whether to build the frontend assets
