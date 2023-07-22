@@ -1,14 +1,12 @@
 import logging
+from collections import defaultdict
 from contextlib import ExitStack
 from functools import wraps
 
 import sqlparse
 from dateutil import parser
-from collections import defaultdict
-
 from rq.timeouts import JobTimeoutException
 from sshtunnel import open_tunnel
-
 
 from redash import settings, utils
 from redash.utils import json_loads
